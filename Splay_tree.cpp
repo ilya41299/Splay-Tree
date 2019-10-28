@@ -2,6 +2,7 @@
 #include <queue>
 #include <string>
 #include <unordered_map>
+#include <sstream>
 
 template <typename T_key, typename T_value>
 class SplayTree 
@@ -124,6 +125,11 @@ void SplayTree<T_key, T_value>::add(T_key K, T_value V)
 		new_node->parent = pre_iterator;
 		if (pre_iterator == nullptr) root = new_node;
 		else if (new_node->key < pre_iterator->key) pre_iterator->left = new_node;
+		else if (new_node->key == pre_iterator->key) 
+		{
+			delete new_node;
+			throw std::logic_error("double add");
+		}
 		else pre_iterator->right = new_node;
 	}
 	splay(new_node);
@@ -153,7 +159,7 @@ std::pair<bool, T_value> SplayTree<T_key, T_value>::search(T_key K)
 {
 	std::pair<T_key, T_value> find_K_pair;
 	Node* iterator = find_node(K);
-	if (iterator->key != K) 
+	if (root == nullptr || iterator->key != K)
 	{
 		std::string empty = "";
 		find_K_pair.first = false;
@@ -267,27 +273,34 @@ template<typename T_key, typename T_value>
 void SplayTree<T_key, T_value>::delete_node(T_key K)
 {
 	Node* delete_node = find_node(K);
-	if (delete_node->key != K) throw std::logic_error("vertex not find");
+	if (delete_node==nullptr || delete_node->key != K ) throw std::logic_error("vertex not find");
 	splay(delete_node);
 	Node* left_tree = root->left;
-	left_tree->parent = nullptr;
 	Node* right_tree = root->right;
-	right_tree->parent = nullptr;
-	delete root;
+	
+	
 	if (left_tree == nullptr && right_tree == nullptr) 
 	{
+		delete root;
 		root = nullptr;
 	}
 	else if (left_tree == nullptr) 
 	{
+		right_tree->parent = nullptr;
+		delete root;
 		root = right_tree;
 	}
 	else if (right_tree == nullptr) 
 	{
+		left_tree->parent = nullptr;
+		delete root;
 		root = left_tree;
 	}
 	else 
 	{
+		left_tree->parent = nullptr;
+		right_tree->parent = nullptr;
+		delete root;
 		root = left_tree;
 		Node* max_in_left = find_max(left_tree);
 		splay(max_in_left);
@@ -300,7 +313,8 @@ void SplayTree<T_key, T_value>::delete_node(T_key K)
 template<typename T_key, typename T_value>
 std::string SplayTree<T_key, T_value>::print()
 {
-	if (root == nullptr) throw std::logic_error("print empty tree");
+	if (root == nullptr) return "_";
+		//throw std::logic_error("print empty tree");
 	std::queue<Node*> queue;
 	std::string out = "";
 	queue.push(root->left);
@@ -359,5 +373,71 @@ size_t SplayTree<T_key, T_value>::find_h(Node * temp, size_t temp_index, size_t 
 			find_h(temp->right, right_index, new_temp_h, map));
 	}
 	return temp_h;
+}
+
+
+	
+int main()
+{
+	
+	std::string temp_1, temp_2, temp_3, output = "";
+	SplayTree<long long, std::string> My_tree;
+	std::getline(std::cin, temp_1, '\0');
+	std::istringstream line_stream(temp_1);
+	while (line_stream >> temp_1)
+	{
+		try
+		{
+			temp_2.clear(), temp_3.clear();
+			if (temp_1 == "print" && line_stream.peek() == '\n')
+			{
+				output += My_tree.print() + '\n';
+			}
+			else if (temp_1 == "min" && line_stream.peek() == '\n')
+			{
+				std::pair<long long, std::string> pair = My_tree.min();
+				output += std::to_string(pair.first) + ' ' + pair.second + '\n';
+			}
+			else if (temp_1 == "max" && line_stream.peek() == '\n')
+			{
+				std::pair<long long, std::string> pair = My_tree.max();
+				output += std::to_string(pair.first) + ' ' + pair.second + '\n';
+			}
+			else if (temp_1 == "search" && line_stream.peek() != '\n' && line_stream >> temp_2 && line_stream.peek() == '\n')
+			{
+				std::pair<bool, std::string> pair = My_tree.search(std::stoull(temp_2));
+				if (!pair.first) output += "0\n";
+				else output += std::to_string(pair.first) + ' ' + pair.second + '\n';
+			}
+			else if (temp_1 == "delete" && line_stream.peek() != '\n' && line_stream >> temp_2 && line_stream.peek() == '\n')
+			{
+				My_tree.delete_node(std::stoll(temp_2));
+			}
+			else if (temp_1 == "set" && line_stream.peek() != '\n' && line_stream >> temp_2 && line_stream.peek() != '\n' && 
+				line_stream >> temp_3 && line_stream.peek() == '\n')
+			{
+				My_tree.set(std::stoll(temp_2), temp_3);
+			}
+			else if (temp_1 == "add" && line_stream.peek() != '\n' && line_stream >> temp_2 && line_stream.peek() != '\n' && 
+				line_stream >> temp_3 && line_stream.peek() == '\n')
+			{
+				My_tree.add(std::stoll(temp_2), temp_3);
+			}
+			else
+			{
+				line_stream.ignore(256, '\n');
+				output += "error\n";
+			}
+		}
+		catch (...)
+		{
+			output += "error\n";
+			line_stream.ignore(256, '\n');
+		}
+	}
+
+	if (output != "") output.pop_back();
+	std::cout << output;
+	return 0;
 }
 
