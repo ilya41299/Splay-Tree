@@ -4,6 +4,10 @@
 #include <unordered_map>
 #include <sstream>
 
+#include <fstream>
+#include <chrono>
+#include "Splay Tree.h"
+
 template <typename T_key, typename T_value>
 class SplayTree 
 {
@@ -30,9 +34,9 @@ public:
 	}
 
 	void destroy(Node* node);
-	void add(T_key K, T_value V);
-	void set(T_key K, T_value V);
-	std::pair<bool, T_value> search(T_key K);
+	void add(T_key &K, T_value& V);
+	void set(T_key &K, T_value& V);
+	std::pair<bool, T_value> search(T_key& K);
 	void splay(Node* node);
 	void zig(Node* node);
 	void zigzigL(Node* node);
@@ -43,11 +47,11 @@ public:
 	void right_rotation(Node* node);
 	std::pair<T_key, T_value> min();
 	std::pair<T_key, T_value> max();
-	void delete_node(T_key K);
+	void delete_node(T_key& K);
 	std::string print();
 	size_t find_h(Node* temp, size_t temp_index, size_t temp_h, std::unordered_map< size_t, Node*>& map);
 
-	Node* find_node(T_key K) 
+	Node* find_node(T_key& K) 
 	{
 		Node* pre_iterator = root;
 		Node* iterator = root;
@@ -99,7 +103,7 @@ void SplayTree<T_key, T_value>::destroy(Node* node)
 }
 
 template <typename T_key, typename T_value>
-void SplayTree<T_key, T_value>::add(T_key K, T_value V) 
+void SplayTree<T_key, T_value>::add(T_key& K, T_value& V) 
 {
 	Node* new_node = new Node;
 	new_node->key = K;
@@ -136,7 +140,7 @@ void SplayTree<T_key, T_value>::add(T_key K, T_value V)
 }
 
 template <typename T_key, typename T_value>
-void SplayTree<T_key, T_value>::set(T_key K, T_value V)
+void SplayTree<T_key, T_value>::set(T_key& K, T_value& V)
 {
 	Node* iterator = root;
 	Node* pre_iterator = nullptr;
@@ -155,7 +159,7 @@ void SplayTree<T_key, T_value>::set(T_key K, T_value V)
 }
 
 template<typename T_key, typename T_value>
-std::pair<bool, T_value> SplayTree<T_key, T_value>::search(T_key K)
+std::pair<bool, T_value> SplayTree<T_key, T_value>::search(T_key& K)
 {
 	std::pair<T_key, T_value> find_K_pair;
 	Node* iterator = find_node(K);
@@ -270,7 +274,7 @@ std::pair<T_key, T_value> SplayTree<T_key, T_value>::max()
 }
 
 template<typename T_key, typename T_value>
-void SplayTree<T_key, T_value>::delete_node(T_key K)
+void SplayTree<T_key, T_value>::delete_node(T_key& K)
 {
 	Node* delete_node = find_node(K);
 	if (delete_node==nullptr || delete_node->key != K ) throw std::logic_error("vertex not find");
@@ -325,6 +329,7 @@ std::string SplayTree<T_key, T_value>::print()
 	out += '[' + std::to_string(root->key) + ' ' + root->value + ']';
 	if (root->left != nullptr || root->right != nullptr) out += '\n';
 	else if (root->left == nullptr && root->right == nullptr) return out;
+	auto begin_print = std::chrono::steady_clock::now();
 	while (!queue.empty())
 	{
 		Node* time = queue.front();
@@ -349,7 +354,6 @@ std::string SplayTree<T_key, T_value>::print()
 				queue.push(time->right);
 			}
 		}
-
 		if ((counter_el & (counter_el - 1)) == 0 )
 		{
 			if (counter_h < h-1) out += '\n';
@@ -357,6 +361,9 @@ std::string SplayTree<T_key, T_value>::print()
 		}		
 		else out += ' ';
 	}
+	auto end_print = std::chrono::steady_clock::now();
+	auto elapsed_ms = std::chrono::duration_cast<std::chrono::milliseconds>(end_print - begin_print);
+	std::cout << "The time to find h: " << elapsed_ms.count() << " ms\n";
 	return out;
 }
 
@@ -379,10 +386,24 @@ size_t SplayTree<T_key, T_value>::find_h(Node * temp, size_t temp_index, size_t 
 	
 int main()
 {
+	//
 	
+	std::string real_out;
+	std::ifstream fin("in4.txt");
+	std::ifstream fin_ans("out4.txt");
+	std::getline(fin_ans, real_out, '\0');
 	std::string temp_1, temp_2, temp_3, output = "";
+	//
+	auto begin_print = std::chrono::steady_clock::now();
+	
+	auto end_print = std::chrono::steady_clock::now();
+	
+	
+
+	std::getline(fin, temp_1, '\0');
 	SplayTree<long long, std::string> My_tree;
-	std::getline(std::cin, temp_1, '\0');
+	//std::getline(std::cin, temp_1, '\0');
+	auto begin_prog = std::chrono::steady_clock::now();
 	std::istringstream line_stream(temp_1);
 	while (line_stream >> temp_1)
 	{
@@ -391,7 +412,9 @@ int main()
 			temp_2.clear(), temp_3.clear();
 			if (temp_1 == "print" && line_stream.peek() == '\n')
 			{
+				begin_print = std::chrono::steady_clock::now();
 				output += My_tree.print() + '\n';
+				end_print = std::chrono::steady_clock::now();
 			}
 			else if (temp_1 == "min" && line_stream.peek() == '\n')
 			{
@@ -405,23 +428,28 @@ int main()
 			}
 			else if (temp_1 == "search" && line_stream.peek() != '\n' && line_stream >> temp_2 && line_stream.peek() == '\n')
 			{
-				std::pair<bool, std::string> pair = My_tree.search(std::stoull(temp_2));
+				long long search_ = std::stoull(temp_2);
+				std::pair<bool, std::string> pair = My_tree.search(search_);
 				if (!pair.first) output += "0\n";
 				else output += std::to_string(pair.first) + ' ' + pair.second + '\n';
 			}
 			else if (temp_1 == "delete" && line_stream.peek() != '\n' && line_stream >> temp_2 && line_stream.peek() == '\n')
 			{
-				My_tree.delete_node(std::stoll(temp_2));
+				
+				long long delete_ = std::stoll(temp_2);
+				My_tree.delete_node(delete_);
 			}
 			else if (temp_1 == "set" && line_stream.peek() != '\n' && line_stream >> temp_2 && line_stream.peek() != '\n' && 
 				line_stream >> temp_3 && line_stream.peek() == '\n')
 			{
-				My_tree.set(std::stoll(temp_2), temp_3);
+				long long set_ = std::stoll(temp_2);
+				My_tree.set(set_, temp_3);
 			}
 			else if (temp_1 == "add" && line_stream.peek() != '\n' && line_stream >> temp_2 && line_stream.peek() != '\n' && 
 				line_stream >> temp_3 && line_stream.peek() == '\n')
 			{
-				My_tree.add(std::stoll(temp_2), temp_3);
+				long long add_ = std::stoll(temp_2);
+				My_tree.add(add_, temp_3);
 			}
 			else
 			{
@@ -436,8 +464,15 @@ int main()
 		}
 	}
 
-	if (output != "") output.pop_back();
-	std::cout << output;
+	//if (output != "") output.pop_back();
+	//std::cout << output;
+	auto end_prog = std::chrono::steady_clock::now();
+	auto elapsed_ms = std::chrono::duration_cast<std::chrono::milliseconds>(end_print - begin_print);
+	auto elapsed_ms_2 = std::chrono::duration_cast<std::chrono::milliseconds>(end_prog - begin_prog) - elapsed_ms;
+	std::cout << "The time to print: " << elapsed_ms.count() << " ms\n";
+	std::cout << "The time all without print: " << elapsed_ms_2.count() << " ms\n";
+	if (real_out == output) std::cout << "perfect\n";
+	
 	return 0;
 }
 
